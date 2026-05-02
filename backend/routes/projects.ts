@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { Project } from "../models/Project.model";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 
@@ -13,12 +14,24 @@ router.get("/", requireAuth, async (req, res, next) => {
   }
 });
 
+const CreateProjectSchema = z.object({
+  title: z.string().min(1, "Title is required").max(100),
+  description: z.string().max(1000).optional(),
+  adminId: z.string().length(24).optional(),
+});
+
 router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { title, description, adminId } = req.body;
+    const parsed = CreateProjectSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+    }
 
-    if (!title || (!adminId && !(req as any).user?.id)) {
-      return res.status(400).json({ error: "Title and AdminId are required" });
+    const { title, description, adminId } = parsed.data;
+
+    const createdBy = adminId || (req as any).user?.id;
+    if (!createdBy) {
+      return res.status(400).json({ error: "Admin context required" });
     }
 
     const newProject = await Project.create({

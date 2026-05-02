@@ -7,6 +7,7 @@ export interface IUser extends Document {
   email?: string;
   role: 'Admin' | 'Member';
   password?: string;
+  passwordChangedAt?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -16,7 +17,8 @@ const UserSchema: Schema = new Schema(
     mobile: { type: String, required: true, unique: true },
     email: { type: String, unique: true, sparse: true },
     role: { type: String, enum: ['Admin', 'Member'], default: 'Member' },
-    password: { type: String }, // Hashed password
+    password: { type: String, required: true, minlength: 6 }, // Hashed via pre-save hook
+    passwordChangedAt: { type: Date },
   },
   { timestamps: true }
 );

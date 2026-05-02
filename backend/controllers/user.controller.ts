@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { userService } from '../services/user.service';
 
 class UserController {
@@ -13,11 +14,19 @@ class UserController {
 
   addUser = async (req: Request, res: Response) => {
     try {
-      const { name, email, mobile, role } = req.body;
+      const AddUserSchema = z.object({
+        name: z.string().min(1, "Name is required").max(100),
+        email: z.string().email("Invalid email").optional(),
+        mobile: z.string().min(10, "Mobile number too short").max(15),
+        role: z.enum(['Admin', 'Member']).optional(),
+      });
 
-      if (!name || !email || !mobile) {
-        return res.status(400).json({ error: "Name, Email, and Mobile are required" });
+      const parsed = AddUserSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
       }
+
+      const { name, email, mobile, role } = parsed.data;
 
       const user = await userService.addUser({ name, email, mobile, role });
       res.status(201).json({ user });
@@ -30,16 +39,18 @@ class UserController {
   };
   changePassword = async (req: any, res: any) => {
     try {
+      const ChangePasswordSchema = z.object({
+        currentPassword: z.string().min(1, "Current password is required"),
+        newPassword: z.string().min(6, "New password must be at least 6 characters"),
+      });
+
+      const parsed = ChangePasswordSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+      }
+
       const userId = req.user?.id;
-      const { currentPassword, newPassword } = req.body;
-
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: 'Current password and new password are required.' });
-      }
-
-      if (newPassword.length < 6) {
-        return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
-      }
+      const { currentPassword, newPassword } = parsed.data;
 
       const user = await userService.getUserById(userId);
       if (!user) {
@@ -52,6 +63,7 @@ class UserController {
       }
 
       user.password = newPassword;
+      user.passwordChangedAt = new Date();
       await user.save();
 
       res.json({ message: 'Password updated successfully.' });

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { z } from "zod";
 import { taskService } from "../services/task.service";
 import { aiService } from "../services/ai.service";
 import { AuthRequest } from "../middleware/auth.middleware";
@@ -22,12 +23,26 @@ class TaskController {
 
   addTask = async (req: Request, res: Response) => {
     try {
-      const { title, description, projectId, project, assignedTo_MemberId, assignedTo } = req.body;
+      const AddTaskSchema = z.object({
+        title: z.string().min(1, "Title is required").max(200),
+        description: z.string().max(2000).optional().default(""),
+        projectId: z.string().length(24).optional(),
+        project: z.string().length(24).optional(),
+        assignedTo_MemberId: z.string().length(24).optional(),
+        assignedTo: z.string().length(24).optional(),
+      });
+
+      const parsed = AddTaskSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+      }
+
+      const { title, description, projectId, project, assignedTo_MemberId, assignedTo } = parsed.data;
       const assignee = assignedTo_MemberId || assignedTo;
       const finalProject = project || projectId;
 
-      if (!title || !finalProject || !assignee) {
-        return res.status(400).json({ error: "Missing required fields" });
+      if (!finalProject || !assignee) {
+        return res.status(400).json({ error: "Project and AssignedTo are required" });
       }
 
       const newTask = await taskService.addTask({
@@ -46,11 +61,17 @@ class TaskController {
   updateTaskStatus = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      
+      const StatusSchema = z.object({
+        status: z.enum(['Pending', 'In Progress', 'Completed'])
+      });
 
-      if (!status || !['Pending', 'In Progress', 'Completed'].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
+      const parsed = StatusSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid status", details: parsed.error.flatten() });
       }
+
+      const { status } = parsed.data;
 
       const updatedTask = await taskService.updateTaskStatus(id, status as any);
       res.json({ task: updatedTask });
@@ -64,11 +85,24 @@ class TaskController {
 
   generateTasks = async (req: Request, res: Response) => {
     try {
-      const { prompt, projectId, project, assignedTo, preview } = req.body;
+      const GenerateSchema = z.object({
+        prompt: z.string().min(1, "Prompt is required"),
+        projectId: z.string().length(24).optional(),
+        project: z.string().length(24).optional(),
+        assignedTo: z.string().length(24),
+        preview: z.boolean().optional()
+      });
+
+      const parsed = GenerateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+      }
+
+      const { prompt, projectId, project, assignedTo, preview } = parsed.data;
       const finalProject = project || projectId;
 
-      if (!prompt || !finalProject || !assignedTo) {
-        return res.status(400).json({ error: "prompt, project, and assignedTo are required" });
+      if (!finalProject) {
+        return res.status(400).json({ error: "Project ID is required" });
       }
 
       // Call AI Service

@@ -1,20 +1,24 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Ethara Task Manager (Production-Ready)
 
-# Run and deploy your AI Studio app
+A full-stack, enterprise-grade task management ecosystem featuring automated task delegation powered by **Gemini AI**. This platform moved from a Google AI Studio prototype to a fully hardened, persistent SaaS architecture.
 
-This contains everything you need to run your app locally.
+## 🛡️ Security & Hardening (Phase 4 Audit Complete)
+This application has been audited and hardened for production deployment:
+*   **Request Validation**: Implemented strict schema validation using **Zod** for all API payloads.
+*   **Security Headers**: Integrated **Helmet.js** to mitigate XSS, clickjacking, and MIME-sniffing.
+*   **JWT Revocation**: Real-time token invalidation logic tied to password change timestamps.
+*   **Database Resilience**: Mongoose connection logic with automated 5-attempt retry and backoff.
+*   **Advanced Auth**: Role-Based Access Control (RBAC) and session-based JWT persistence.
 
-View your app in AI Studio: https://ai.studio/apps/44c8c30d-b729-4327-a542-1d36336baadc
+## 🚀 Technical Stack
+*   **Frontend**: React, Vite, TypeScript, Tailwind CSS, Zustand.
+*   **Backend**: Node.js, Express, TypeScript, Zod.
+*   **Database**: MongoDB Atlas (Mongoose).
+*   **AI**: Google Gemini Pro (Vertex AI / AI Studio).
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## ⚙️ Setup & Installation
+1. Clone the repository.
+2. Create a `.env` in the root (see `.env.example`).
+3. Install dependencies: `npm install`
+4. Seed the Admin user: `npx tsx backend/scripts/seed.ts`
+5. Run the dev suite: `npm run dev` (Backend) & `npm run dev:frontend`.

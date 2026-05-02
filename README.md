@@ -1,7 +1,7 @@
 # ⚡ Ethara Task Manager (Production-Ready SaaS)
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-View_Project-blue?style=for-the-badge)](https://ethara-task-manager-production-5ee6.up.railway.app/)
-*(Note: Replace the link above with your actual Railway URL)*
+
 
 A full-stack, enterprise-grade task management ecosystem featuring automated task delegation powered by **Google Gemini AI**. This platform was engineered to transition from a conceptual AI prototype to a fully hardened, persistent SaaS architecture.
 

@@ -1,32 +1,32 @@
-import { db, DbUser } from '../data/mockDatabase';
+import { User } from '../models/User.model';
 
 class UserService {
-  getAllUsers() {
-    // Return users without passwords
-    return db.users.map(({ password, ...user }) => user);
+  async getAllUsers() {
+    return User.find().select('-password');
   }
 
-  addUser(userData: Omit<DbUser, 'id' | 'password'>) {
-    // Check if user exists
-    const existingUser = db.users.find(
-      u => u.email === userData.email || u.mobile === userData.mobile
-    );
+  async getUserById(id: string) {
+    return User.findById(id);
+  }
+
+  async addUser(userData: { name: string; email?: string; mobile: string; role?: 'Admin' | 'Member' }) {
+    const existingUser = await User.findOne({
+      $or: [{ email: userData.email }, { mobile: userData.mobile }]
+    });
 
     if (existingUser) {
       throw new Error("User with this email or mobile already exists");
     }
 
-    const newUser: DbUser = {
-      id: `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    const newUser = await User.create({
       ...userData,
-      role: userData.role === 'Admin' ? 'Admin' : 'Member', // default to Member unless explicitly Admin
-      password: userData.mobile, // Rule: Member's Mobile Number as their default login password
-    };
+      role: userData.role === 'Admin' ? 'Admin' : 'Member',
+      password: userData.mobile,
+    });
 
-    db.users.push(newUser);
-
-    const { password, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
+    const userObj = newUser.toObject();
+    delete userObj.password;
+    return userObj;
   }
 }
 

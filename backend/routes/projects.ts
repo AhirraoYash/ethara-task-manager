@@ -1,28 +1,36 @@
 import { Router } from "express";
-import { db, DbProject } from "../data/mockDatabase";
+import { Project } from "../models/Project.model";
+import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 
 const router = Router();
 
-router.get("/", (req, res) => {
-  res.json({ projects: db.projects });
+router.get("/", requireAuth, async (req, res, next) => {
+  try {
+    const projects = await Project.find();
+    res.json({ projects });
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.post("/", (req, res) => {
-  const { title, description, adminId } = req.body;
+router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { title, description, adminId } = req.body;
 
-  if (!title || !adminId) {
-    return res.status(400).json({ error: "Title and AdminId are required" });
+    if (!title || (!adminId && !(req as any).user?.id)) {
+      return res.status(400).json({ error: "Title and AdminId are required" });
+    }
+
+    const newProject = await Project.create({
+      title,
+      description: description || "",
+      createdBy: adminId || (req as any).user?.id,
+    });
+
+    res.status(201).json({ project: newProject });
+  } catch (error) {
+    next(error);
   }
-
-  const newProject: DbProject = {
-    id: `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-    title,
-    description: description || "",
-    createdBy_AdminId: adminId,
-  };
-
-  db.projects.push(newProject);
-  res.status(201).json({ project: newProject });
 });
 
 export default router;

@@ -14,7 +14,7 @@ interface CreateTaskModalProps {
 export default function CreateTaskModal({ isOpen, onClose, onSuccess, users, projects }: CreateTaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [project, setProjectId] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,8 +30,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, users, pro
       await createTask({
         title,
         description,
-        projectId,
-        assignedTo_MemberId: assignedTo
+        project,
+        assignedTo: assignedTo
       });
       
       onSuccess();
@@ -91,12 +91,12 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, users, pro
               <select
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                value={projectId}
+                value={project}
                 onChange={(e) => setProjectId(e.target.value)}
               >
                 <option value="">Select a project</option>
                 {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.title}</option>
+                  <option key={p._id} value={p._id}>{p.title}</option>
                 ))}
               </select>
             </div>
@@ -111,7 +111,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, users, pro
               >
                 <option value="">Select a member</option>
                 {members.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                  <option key={m._id} value={m._id}>{m.name}</option>
                 ))}
               </select>
             </div>

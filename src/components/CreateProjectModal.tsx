@@ -26,7 +26,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
     setIsLoading(true);
 
     try {
-      await createProject(title, description, user.id);
+      await createProject(title, description, user._id);
       
       onSuccess();
       onClose();

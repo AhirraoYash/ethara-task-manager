@@ -156,10 +156,10 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {pendingTasks.map(task => (
                   <TaskCard 
-                    key={task.id} 
+                    key={task._id} 
                     task={task} 
-                    assignedUserName={users.find(u => u.id === task.assignedTo_MemberId)?.name}
-                    projectName={projects.find(p => p.id === task.projectId)?.title}
+                    assignedUserName={users.find(u => u._id === task.assignedTo)?.name}
+                    projectName={projects.find(p => p._id === task.project)?.title}
                   />
                 ))}
               </div>
@@ -175,10 +175,10 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-80">
                 {completedTasks.map(task => (
                   <TaskCard 
-                    key={task.id} 
+                    key={task._id} 
                     task={task} 
-                    assignedUserName={users.find(u => u.id === task.assignedTo_MemberId)?.name}
-                    projectName={projects.find(p => p.id === task.projectId)?.title}
+                    assignedUserName={users.find(u => u._id === task.assignedTo)?.name}
+                    projectName={projects.find(p => p._id === task.project)?.title}
                   />
                 ))}
               </div>
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
           <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Team Directory</h2>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
             {users.map(user => (
-              <div key={user.id} className="p-4 flex items-center justify-between">
+              <div key={user._id} className="p-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500">{user.mobile}{user.email ? ` • ${user.email}` : ''}</p>

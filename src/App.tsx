@@ -28,7 +28,7 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        {user && <Navbar />}
+        {user && user.role === 'Admin' && <Navbar />}
         <div className="flex-grow">
           <Routes>
             <Route path="/" element={<LoginPage />} />

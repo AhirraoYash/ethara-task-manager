@@ -1,36 +1,40 @@
 import { Request, Response } from "express";
 import { taskService } from "../services/task.service";
 import { aiService } from "../services/ai.service";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 class TaskController {
-  getTasks = (req: Request, res: Response) => {
+  getTasks = async (req: AuthRequest, res: Response) => {
     try {
       const { assignedTo } = req.query;
       
       if (assignedTo && typeof assignedTo === 'string') {
-        const userTasks = taskService.getTasksByAssignedTo(assignedTo);
+        const userTasks = await taskService.getTasksByAssignedTo(assignedTo);
         return res.json({ tasks: userTasks });
       }
 
-      res.json({ tasks: taskService.getAllTasks() });
+      const tasks = await taskService.getAllTasks();
+      res.json({ tasks });
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Internal Server Error" });
     }
   };
 
-  addTask = (req: Request, res: Response) => {
+  addTask = async (req: Request, res: Response) => {
     try {
-      const { title, description, projectId, assignedTo } = req.body;
+      const { title, description, projectId, project, assignedTo_MemberId, assignedTo } = req.body;
+      const assignee = assignedTo_MemberId || assignedTo;
+      const finalProject = project || projectId;
 
-      if (!title || !projectId || !assignedTo) {
+      if (!title || !finalProject || !assignee) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      const newTask = taskService.addTask({
+      const newTask = await taskService.addTask({
         title,
         description,
-        projectId,
-        assignedTo_MemberId: assignedTo
+        project: finalProject,
+        assignedTo: assignee
       });
 
       res.status(201).json({ task: newTask });
@@ -39,7 +43,7 @@ class TaskController {
     }
   };
 
-  updateTaskStatus = (req: Request, res: Response) => {
+  updateTaskStatus = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -48,7 +52,7 @@ class TaskController {
         return res.status(400).json({ error: "Invalid status" });
       }
 
-      const updatedTask = taskService.updateTaskStatus(id, status as any);
+      const updatedTask = await taskService.updateTaskStatus(id, status as any);
       res.json({ task: updatedTask });
     } catch (error: any) {
       if (error.message === "Task not found") {
@@ -60,24 +64,30 @@ class TaskController {
 
   generateTasks = async (req: Request, res: Response) => {
     try {
-      const { prompt, projectId, assignedTo } = req.body;
+      const { prompt, projectId, project, assignedTo, preview } = req.body;
+      const finalProject = project || projectId;
 
-      if (!prompt || !projectId || !assignedTo) {
-        return res.status(400).json({ error: "prompt, projectId, and assignedTo are required" });
+      if (!prompt || !finalProject || !assignedTo) {
+        return res.status(400).json({ error: "prompt, project, and assignedTo are required" });
       }
 
       // Call AI Service
       const generatedItems = await aiService.generateTasks(prompt);
 
+      if (preview) {
+        // Return without saving
+        return res.json({ tasks: generatedItems });
+      }
+
       // Validate the results and add them using taskService
       const createdTasks = [];
       for (const item of generatedItems) {
         if (item.title) {
-          const newTask = taskService.addTask({
+          const newTask = await taskService.addTask({
             title: item.title,
             description: item.description || "",
-            projectId,
-            assignedTo_MemberId: assignedTo
+            project: finalProject,
+            assignedTo: assignedTo
           });
           createdTasks.push(newTask);
         }

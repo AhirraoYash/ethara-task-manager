@@ -1,56 +1,31 @@
 import { Task } from '../types';
-
-const BASE_URL = 'http://localhost:5000/api';
+import { apiClient } from './client';
 
 export const getTasks = async (assignedTo?: string): Promise<Task[]> => {
-  const url = assignedTo ? `${BASE_URL}/tasks?assignedTo=${assignedTo}` : `${BASE_URL}/tasks`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch tasks');
-  const data = await res.json();
+  const url = assignedTo ? `/tasks?assignedTo=${assignedTo}` : `/tasks`;
+  const data = await apiClient(url);
   return data.tasks || [];
 };
 
-export const createTask = async (taskData: Omit<Task, 'id' | 'status'>): Promise<Task> => {
-  const res = await fetch(`${BASE_URL}/tasks`, {
+export const createTask = async (taskData: Omit<Task, '_id' | 'status'>): Promise<Task> => {
+  const data = await apiClient('/tasks', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(taskData),
   });
-  
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to create task');
-  }
-  
-  return res.json();
+  return data.task;
 };
 
 export const updateTaskStatus = async (taskId: string, newStatus: Task['status']): Promise<Task> => {
-  const res = await fetch(`${BASE_URL}/tasks/${taskId}/status`, {
+  const data = await apiClient(`/tasks/${taskId}/status`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: newStatus }),
   });
-  
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to update task status');
-  }
-  
-  return res.json();
+  return data.task;
 };
 
-export const generateAITasks = async (prompt: string, projectId: number | string, assignedTo: number | string): Promise<{ tasks: Task[] }> => {
-  const res = await fetch(`${BASE_URL}/tasks/generate`, {
+export const generateAITasks = async (prompt: string, project: string, assignedTo: string, preview: boolean = false): Promise<{ tasks: any[] }> => {
+  return apiClient('/tasks/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, projectId, assignedTo }),
+    body: JSON.stringify({ prompt, projectId: project, assignedTo, preview }),
   });
-  
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to generate tasks');
-  }
-  
-  return res.json();
 };

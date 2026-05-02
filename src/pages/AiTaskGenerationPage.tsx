@@ -5,13 +5,13 @@ import { Project, User } from '../types';
 import { Wand2, ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react';
 import { getProjects } from '../api/project.api';
 import { getUsers } from '../api/user.api';
-import { createTask } from '../api/task.api';
+import { createTask, generateAITasks } from '../api/task.api';
 
 interface GeneratedTask {
-  id: string; // temporary id
+  _id: string; // temporary id
   title: string;
   description: string;
-  assignedTo_MemberId: string;
+  assignedTo: string;
 }
 
 export default function AiTaskGenerationPage() {
@@ -48,7 +48,7 @@ export default function AiTaskGenerationPage() {
       setMembers((usersData || []).filter((u: User) => u.role === 'Member'));
       
       if (projectsData && projectsData.length > 0) {
-        setSelectedProjectId(projectsData[0].id);
+        setSelectedProjectId(projectsData[0]._id);
       }
     } catch (err) {
       console.error(err);
@@ -56,7 +56,7 @@ export default function AiTaskGenerationPage() {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!selectedProjectId) {
       setError('Please select a project first.');
       return;
@@ -73,41 +73,47 @@ export default function AiTaskGenerationPage() {
     setError('');
     setIsGenerating(true);
 
-    // Static AI Generation Simulation
-    setTimeout(() => {
-      const newTasks: GeneratedTask[] = [];
-      const numTasks = taskCount > 0 ? taskCount : 1;
+    try {
+      // Pick a random member for assignment, or the first one as default
+      const defaultMemberId = members[0]._id;
+      
+      const response = await generateAITasks(
+        prompt + (taskCount ? ` Please generate exactly ${taskCount} tasks.` : ''),
+        selectedProjectId,
+        defaultMemberId,
+        true // preview mode
+      );
 
-      for (let i = 0; i < numTasks; i++) {
-        const randomMember = members[Math.floor(Math.random() * members.length)];
-        newTasks.push({
-          id: Math.random().toString(36).substring(7),
-          title: `AI Generated Task ${i + 1}`,
-          description: `Analyze data based on prompt: "${prompt.substring(0, 20)}..."`,
-          assignedTo_MemberId: randomMember.id
-        });
-      }
+      const newTasks = response.tasks.map((task: any, index: number) => ({
+        _id: Math.random().toString(36).substring(7),
+        title: task.title,
+        description: task.description || '',
+        assignedTo: members[index % members.length]._id
+      }));
 
       setGeneratedTasks(newTasks);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate tasks using AI.');
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   const handleTaskChange = (taskId: string, field: keyof GeneratedTask, value: string) => {
     setGeneratedTasks(prev => 
-      prev.map(t => t.id === taskId ? { ...t, [field]: value } : t)
+      prev.map(t => t._id === taskId ? { ...t, [field]: value } : t)
     );
   };
 
   const handleRemoveTask = (taskId: string) => {
-    setGeneratedTasks(prev => prev.filter(t => t.id !== taskId));
+    setGeneratedTasks(prev => prev.filter(t => t._id !== taskId));
   };
 
   const handleSaveTasks = async () => {
     if (generatedTasks.length === 0) return;
     
     // Validate
-    if (generatedTasks.some(t => !t.title.trim() || !t.assignedTo_MemberId)) {
+    if (generatedTasks.some(t => !t.title.trim() || !t.assignedTo)) {
       setError('Please ensure all generated tasks have a title and assigned member.');
       return;
     }
@@ -121,8 +127,8 @@ export default function AiTaskGenerationPage() {
         createTask({
           title: task.title,
           description: task.description,
-          projectId: selectedProjectId,
-          assignedTo_MemberId: task.assignedTo_MemberId
+          project: selectedProjectId,
+          assignedTo: task.assignedTo
         })
       ));
 
@@ -168,7 +174,7 @@ export default function AiTaskGenerationPage() {
               >
                 <option value="" disabled>Select a project</option>
                 {projects.map(p => (
-                  <option key={p.id} value={p.id} className="text-gray-900">{p.title}</option>
+                  <option key={p._id} value={p._id} className="text-gray-900">{p.title}</option>
                 ))}
               </select>
             </div>
@@ -233,13 +239,13 @@ export default function AiTaskGenerationPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {generatedTasks.map((task) => (
-                    <tr key={task.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={task._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 whitespace-nowrap">
                         <input
                           type="text"
                           className="w-full px-2 py-1 text-sm border-transparent hover:border-gray-300 focus:border-indigo-500 rounded bg-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                           value={task.title}
-                          onChange={(e) => handleTaskChange(task.id, 'title', e.target.value)}
+                          onChange={(e) => handleTaskChange(task._id, 'title', e.target.value)}
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -247,24 +253,24 @@ export default function AiTaskGenerationPage() {
                           type="text"
                           className="w-full px-2 py-1 text-sm border-transparent hover:border-gray-300 focus:border-indigo-500 rounded bg-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                           value={task.description}
-                          onChange={(e) => handleTaskChange(task.id, 'description', e.target.value)}
+                          onChange={(e) => handleTaskChange(task._id, 'description', e.target.value)}
                         />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <select
                           className="w-full px-2 py-1 text-sm text-gray-900 border-transparent hover:border-gray-300 focus:border-indigo-500 rounded bg-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                          value={task.assignedTo_MemberId}
-                          onChange={(e) => handleTaskChange(task.id, 'assignedTo_MemberId', e.target.value)}
+                          value={task.assignedTo}
+                          onChange={(e) => handleTaskChange(task._id, 'assignedTo', e.target.value)}
                         >
                           <option value="" disabled>Select Assignee</option>
                           {members.map(m => (
-                            <option key={m.id} value={m.id} className="text-gray-900">{m.name}</option>
+                            <option key={m._id} value={m._id} className="text-gray-900">{m.name}</option>
                           ))}
                         </select>
                       </td>
                       <td className="px-4 py-3 tracking-wider text-right whitespace-nowrap">
                         <button
-                          onClick={() => handleRemoveTask(task.id)}
+                          onClick={() => handleRemoveTask(task._id)}
                           className="text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors"
                         >
                           <Trash2 size={16} />

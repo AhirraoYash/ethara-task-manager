@@ -1,5 +1,5 @@
 export interface User {
-  id: string;
+  _id: string;
   name: string;
   mobile: string;
   email?: string;
@@ -7,17 +7,17 @@ export interface User {
 }
 
 export interface Project {
-  id: string;
+  _id: string;
   title: string;
   description: string;
-  createdBy_AdminId: string;
+  createdBy: string;
 }
 
 export interface Task {
-  id: string;
+  _id: string;
   title: string;
   description: string;
-  projectId: string;
-  assignedTo_MemberId: string;
+  project: string;
+  assignedTo: string;
   status: 'Pending' | 'In Progress' | 'Completed';
 }

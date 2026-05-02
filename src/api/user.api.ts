@@ -1,25 +1,22 @@
 import { User } from '../types';
-
-const BASE_URL = 'http://localhost:5000/api';
+import { apiClient } from './client';
 
 export const getUsers = async (): Promise<User[]> => {
-  const res = await fetch(`${BASE_URL}/users`);
-  if (!res.ok) throw new Error('Failed to fetch users');
-  const data = await res.json();
+  const data = await apiClient('/users');
   return data.users || [];
 };
 
 export const addMember = async (name: string, email: string, mobile: string): Promise<User> => {
-  const res = await fetch(`${BASE_URL}/users`, {
+  const data = await apiClient('/users', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, mobile, role: 'Member' }),
   });
-  
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to add member');
-  }
-  
-  return res.json();
+  return data.user;
+};
+
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+  return apiClient('/users/change-password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
 };

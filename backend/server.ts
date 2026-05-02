@@ -1,16 +1,31 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import cors from "cors";
+import dotenv from "dotenv";
+import { connectDB } from "./config/db";
+import { errorHandler } from "./middleware/errorHandler";
+import { apiRateLimiter } from "./middleware/rateLimiter";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user.routes";
 import taskRoutes from "./routes/tasks";
 import projectRoutes from "./routes/projects";
 
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, "../.env") });
+
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
+  await connectDB();
+
+  app.use(cors());
   app.use(express.json());
+  app.use("/api", apiRateLimiter);
 
   // API routes FIRST
   app.use("/api/auth", authRoutes);
@@ -36,6 +51,8 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  app.use(errorHandler);
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

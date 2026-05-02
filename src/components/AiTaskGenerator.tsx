@@ -19,7 +19,7 @@ export default function AiTaskGenerator({
   users,
 }: AiTaskGeneratorProps) {
   const [prompt, setPrompt] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [project, setProjectId] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -30,7 +30,7 @@ export default function AiTaskGenerator({
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim() || !projectId || !assignedTo) {
+    if (!prompt.trim() || !project || !assignedTo) {
       setError('Please fill in all fields (Prompt, Project, Assignee).');
       return;
     }
@@ -40,7 +40,7 @@ export default function AiTaskGenerator({
     setIsGenerating(true);
 
     try {
-      await generateAITasks(prompt, projectId, assignedTo);
+      await generateAITasks(prompt, project, assignedTo);
       setSuccessMsg('Tasks successfully generated!');
       setPrompt('');
       setProjectId('');
@@ -96,14 +96,14 @@ export default function AiTaskGenerator({
                 Target Project
               </label>
               <select
-                value={projectId}
+                value={project}
                 onChange={(e) => setProjectId(e.target.value)}
                 className="w-full px-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 disabled={isGenerating}
               >
                 <option value="" disabled>Select a project</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.title}</option>
+                  <option key={p._id} value={p._id}>{p.title}</option>
                 ))}
               </select>
             </div>
@@ -120,7 +120,7 @@ export default function AiTaskGenerator({
               >
                 <option value="" disabled>Select a member</option>
                 {members.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                  <option key={m._id} value={m._id}>{m.name}</option>
                 ))}
               </select>
             </div>

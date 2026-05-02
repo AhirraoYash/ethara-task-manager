@@ -28,7 +28,7 @@ export default function LoginPage() {
 
     try {
       const data = await loginUser(identifier.trim(), password);
-      login(data.user);
+      login(data.user, data.token);
       if (data.user.role === 'Admin') {
         navigate('/admin');
       } else {

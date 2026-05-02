@@ -1,36 +1,39 @@
-import { db, DbTask } from "../data/mockDatabase";
+import { Task } from '../models/Task.model';
+import mongoose from 'mongoose';
 
 class TaskService {
-  getTasksByAssignedTo(assignedTo: string) {
-    return db.tasks.filter(t => t.assignedTo_MemberId === assignedTo);
+  async getTasksByAssignedTo(assignedTo: string) {
+    return Task.find({ assignedTo });
   }
 
-  getAllTasks() {
-    return db.tasks;
+  async getAllTasks() {
+    return Task.find();
   }
 
-  addTask(data: Omit<DbTask, "id" | "status">) {
-    const newTask: DbTask = {
-      id: `task_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+  async addTask(data: { title: string; description?: string; project: string; assignedTo: string }) {
+    const newTask = await Task.create({
       title: data.title,
       description: data.description || "",
-      projectId: data.projectId,
-      assignedTo_MemberId: data.assignedTo_MemberId,
+      project: data.project,
+      assignedTo: data.assignedTo,
       status: 'Pending',
-    };
+    });
 
-    db.tasks.push(newTask);
     return newTask;
   }
 
-  updateTaskStatus(id: string, status: DbTask['status']) {
-    const taskIndex = db.tasks.findIndex(t => t.id === id);
-    if (taskIndex === -1) {
+  async updateTaskStatus(id: string, status: 'Pending' | 'In Progress' | 'Completed') {
+    const updatedTask = await Task.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedTask) {
       throw new Error("Task not found");
     }
 
-    db.tasks[taskIndex].status = status;
-    return db.tasks[taskIndex];
+    return updatedTask;
   }
 }
 
